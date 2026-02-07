@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Model Viewer — UI/UX Design Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <style>
+    :root {
+      --bg-primary: #0d0f12;
+      --bg-secondary: #161a1f;
+      --bg-tertiary: #1e2329;
+      --bg-elevated: #252b33;
+      --border: #2d353e;
+      --text-primary: #e8eaed;
+      --text-secondary: #9aa0a6;
+      --text-muted: #5f6368;
+      --accent: #4a9eff;
+      --accent-hover: #6bb3ff;
+      --success: #34a853;
+      --warning: #f9ab00;
+      --error: #ea4335;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #f5f6f8;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e8eaed;
+      --bg-elevated: #ffffff;
+      --border: #dadce0;
+      --text-primary: #202124;
+      --text-secondary: #5f6368;
+      --text-muted: #80868b;
+      --accent: #1a73e8;
+      --accent-hover: #1557b0;
+      --success: #1e8e3e;
+      --warning: #f29900;
+      --error: #d93025;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 280px 1fr 280px;
+      grid-template-rows: 48px 1fr;
+      height: 100vh;
+    }
+
+    .top-bar {
+      grid-column: 1 / -1;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 10;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-size: 0.813rem;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .theme-toggle:hover {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .sidebar {
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .sidebar-right {
+      border-right: none;
+      border-left: 1px solid var(--border);
+    }
+
+    .panel {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg-elevated);
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(74, 158, 255, 0.05);
+    }
+
+    .upload-zone.has-file {
+      border-style: solid;
+      border-color: var(--success);
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      opacity: 0.8;
+    }
+
+    .upload-text {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .upload-formats {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--bg-elevated);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .progress-bar.visible {
+      display: block;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .progress-text {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat-item {
+      background: var(--bg-elevated);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .stat-label {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 0.875rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-item.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .performance-score {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+
+    .score-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+    }
+
+    .score-circle.good { background: rgba(52, 168, 83, 0.2); color: var(--success); }
+    .score-circle.moderate { background: rgba(249, 171, 0, 0.2); color: var(--warning); }
+    .score-circle.poor { background: rgba(234, 67, 53, 0.2); color: var(--error); }
+
+    .score-status {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .score-status.good { color: var(--success); }
+    .score-status.moderate { color: var(--warning); }
+    .score-status.poor { color: var(--error); }
+
+    .metrics-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8125rem;
+    }
+
+    .metric-label { color: var(--text-secondary); }
+    .metric-value { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+
+    .optimization-tip {
+      font-size: 0.75rem;
+      padding: 10px 12px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--accent);
+      color: var(--text-secondary);
+      margin-top: 8px;
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mode-btn {
+      padding: 10px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-align: center;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .mode-btn:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+    }
+
+    .mode-btn.active {
+      background: rgba(74, 158, 255, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .control-group {
+      margin-bottom: 16px;
+    }
+
+    .control-group:last-child { margin-bottom: 0; }
+
+    .control-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .slider {
+      flex: 1;
+      height: 6px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: var(--bg-elevated);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid var(--bg-primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    .color-picker {
+      width: 36px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      padding: 2px;
+      background: var(--bg-elevated);
+    }
+
+    .color-picker input {
+      width: 100%;
+      height: 100%;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      background: transparent;
+    }
+
+    .btn-reset {
+      padding: 6px 10px;
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-reset:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .camera-presets {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .preset-btn {
+      padding: 10px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .preset-btn:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+    }
+
+    .controls-hint {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      line-height: 1.5;
+    }
+
+    .controls-hint strong { color: var(--text-secondary); }
+
+    .viewport-container {
+      position: relative;
+      background: var(--bg-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #viewport {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .viewport-overlay {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 5;
+    }
+
+    .viewport-toggle {
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+    }
+
+    .viewport-toggle:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .viewport-toggle.active {
+      background: rgba(74, 158, 255, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    @media (max-width: 1200px) {
+      .app {
+        grid-template-columns: 260px 1fr 260px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 48px auto 1fr auto;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .sidebar-right {
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+
+      .panel {
+        flex: 1;
+        min-width: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top-bar">
+      <span class="logo">3D Model Viewer</span>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <span id="themeIcon">☀️</span>
+        <span id="themeLabel">Light Mode</span>
+      </button>
+    </header>
+
+    <aside class="sidebar">
+      <!-- 1. Model Upload & Info -->
+      <div class="panel">
+        <h2 class="panel-title">Model Upload & Info</h2>
+        <label class="upload-zone" id="uploadZone">
+          <input type="file" class="file-input" id="fileInput" accept=".glb,.gltf,.obj,.fbx">
+          <div class="upload-icon">📁</div>
+          <div class="upload-text">Drop file or click to upload</div>
+          <div class="upload-formats">.glb · .gltf · .obj · .fbx</div>
+        </label>
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">0%</div>
+        <div class="stats-grid" id="statsGrid" style="margin-top: 16px;">
+          <div class="stat-item">
+            <div class="stat-label">Vertices</div>
+            <div class="stat-value" id="statVertices">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Triangles</div>
+            <div class="stat-value" id="statTriangles">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Meshes</div>
+            <div class="stat-value" id="statMeshes">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Materials</div>
+            <div class="stat-value" id="statMaterials">—</div>
+          </div>
+          <div class="stat-item full-width">
+            <div class="stat-label">Dimensions (W × H × D)</div>
+            <div class="stat-value" id="statDimensions">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Performance Analysis -->
+      <div class="panel">
+        <h2 class="panel-title">Performance Analysis</h2>
+        <div class="performance-score">
+          <div class="score-circle good" id="scoreCircle">82</div>
+          <div>
+            <div class="score-status good" id="scoreStatus">Good</div>
+            <div class="score-value" style="font-size: 0.75rem; color: var(--text-muted);">Overall score</div>
+          </div>
+        </div>
+        <div class="metrics-list">
+          <div class="metric-row">
+            <span class="metric-label">File size</span>
+            <span class="metric-value" id="metricFileSize">2.5 MB</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Texture memory</span>
+            <span class="metric-value" id="metricTexture">8 MB</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Triangle count</span>
+            <span class="metric-value" id="metricTriangles">15,000</span>
+          </div>
+        </div>
+        <div class="optimization-tip" id="optimizationTip">
+          Reduce texture resolution to improve load times and memory usage.
+        </div>
+      </div>
+    </aside>
+
+    <main class="viewport-container">
+      <canvas id="viewport"></canvas>
+      <div class="viewport-overlay">
+        <button class="viewport-toggle active" id="gridToggle">⊞ Grid</button>
+        <button class="viewport-toggle active" id="axesToggle">↔ Axes</button>
+      </div>
+    </main>
+
+    <aside class="sidebar sidebar-right">
+      <!-- 3. Render Modes -->
+      <div class="panel">
+        <h2 class="panel-title">Render Modes</h2>
+        <div class="mode-grid">
+          <button class="mode-btn active" data-mode="pbr">Default PBR</button>
+          <button class="mode-btn" data-mode="wireframe">Wireframe</button>
+          <button class="mode-btn" data-mode="normals">Normals</button>
+          <button class="mode-btn" data-mode="uv">UV Checker</button>
+          <button class="mode-btn" data-mode="unlit">Unlit</button>
+        </div>
+      </div>
+
+      <!-- 4. Lighting Controls -->
+      <div class="panel">
+        <h2 class="panel-title">Lighting Controls</h2>
+        <div class="control-group">
+          <div class="control-label">Main Light</div>
+          <div class="control-row">
+            <input type="range" class="slider" id="mainIntensity" min="0" max="2" step="0.1" value="1">
+            <input type="color" class="color-picker" id="mainColor" value="#ffffff">
+            <button class="btn-reset" id="mainReset">Reset</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="control-label">Ambient Light</div>
+          <div class="control-row">
+            <input type="range" class="slider" id="ambientIntensity" min="0" max="1" step="0.05" value="0.3">
+            <input type="color" class="color-picker" id="ambientColor" value="#ffffff">
+            <button class="btn-reset" id="ambientReset">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Camera Controls -->
+      <div class="panel">
+        <h2 class="panel-title">Camera Controls</h2>
+        <div class="camera-presets">
+          <button class="preset-btn" data-preset="front">Front</button>
+          <button class="preset-btn" data-preset="side">Side</button>
+          <button class="preset-btn" data-preset="top">Top</button>
+          <button class="preset-btn" data-preset="three-quarter">3/4 View</button>
+        </div>
+        <div class="controls-hint">
+          <strong>Mouse:</strong> Left-drag rotate · Right-drag pan · Scroll zoom<br>
+          <strong>Touch:</strong> 1-finger rotate · 2-finger pan · Pinch zoom<br>
+          <em>Auto-fit on load</em>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+    import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/OBJLoader.js';
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+    let renderer, controls, mesh, mainLight, ambientLight, gridHelper, axesHelper;
+    let currentMode = 'pbr';
+
+    const container = document.querySelector('.viewport-container');
+    const canvas = document.getElementById('viewport');
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1;
+
+      mainLight = new THREE.DirectionalLight(0xffffff, 1);
+      mainLight.position.set(5, 10, 7);
+      scene.add(mainLight);
+
+      ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+      scene.add(ambientLight);
+
+      const geometry = new THREE.BoxGeometry(2, 2, 2);
+      const material = new THREE.MeshStandardMaterial({ color: 0x4a9eff, metalness: 0.3, roughness: 0.6 });
+      mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+
+      gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x333333);
+      gridHelper.visible = true;
+      scene.add(gridHelper);
+
+      axesHelper = new THREE.AxesHelper(3);
+      axesHelper.visible = true;
+      scene.add(axesHelper);
+
+      camera.position.set(4, 4, 4);
+      camera.lookAt(0, 0, 0);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      window.addEventListener('resize', onResize);
+      animate();
+      setupUI();
+    }
+
+    function onResize() {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function setupUI() {
+      const themeToggle = document.getElementById('themeToggle');
+      const themeIcon = document.getElementById('themeIcon');
+      const themeLabel = document.getElementById('themeLabel');
+
+      themeToggle.addEventListener('click', () => {
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        document.documentElement.setAttribute('data-theme', isDark ? 'light' : '');
+        themeIcon.textContent = isDark ? '🌙' : '☀️';
+        themeLabel.textContent = isDark ? 'Dark Mode' : 'Light Mode';
+      });
+
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentMode = btn.dataset.mode;
+          updateRenderMode();
+        });
+      });
+
+      function updateRenderMode() {
+        const setWireframe = (m, v) => {
+          if (m && m.wireframe !== undefined) m.wireframe = v;
+        };
+        const traverse = (obj) => {
+          if (obj.isMesh) {
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach(m => setWireframe(m, currentMode === 'wireframe'));
+          }
+          if (obj.children) obj.children.forEach(traverse);
+        };
+        traverse(mesh);
+      }
+
+      document.getElementById('mainIntensity').addEventListener('input', e => {
+        mainLight.intensity = parseFloat(e.target.value);
+      });
+      document.getElementById('mainColor').addEventListener('input', e => {
+        mainLight.color.set(e.target.value);
+      });
+      document.getElementById('ambientIntensity').addEventListener('input', e => {
+        ambientLight.intensity = parseFloat(e.target.value);
+      });
+      document.getElementById('ambientColor').addEventListener('input', e => {
+        ambientLight.color.set(e.target.value);
+      });
+      document.getElementById('mainReset').addEventListener('click', () => {
+        document.getElementById('mainIntensity').value = 1;
+        document.getElementById('mainColor').value = '#ffffff';
+        mainLight.intensity = 1;
+        mainLight.color.set('#ffffff');
+      });
+      document.getElementById('ambientReset').addEventListener('click', () => {
+        document.getElementById('ambientIntensity').value = 0.3;
+        document.getElementById('ambientColor').value = '#ffffff';
+        ambientLight.intensity = 0.3;
+        ambientLight.color.set('#ffffff');
+      });
+
+      document.getElementById('gridToggle').addEventListener('click', () => {
+        gridHelper.visible = !gridHelper.visible;
+        document.getElementById('gridToggle').classList.toggle('active', gridHelper.visible);
+      });
+      document.getElementById('axesToggle').addEventListener('click', () => {
+        axesHelper.visible = !axesHelper.visible;
+        document.getElementById('axesToggle').classList.toggle('active', axesHelper.visible);
+      });
+
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const preset = btn.dataset.preset;
+          const target = controls.target.clone();
+          const d = camera.position.distanceTo(target) || 5;
+          if (preset === 'front') {
+            camera.position.set(target.x, target.y, target.z + d);
+          } else if (preset === 'side') {
+            camera.position.set(target.x + d, target.y, target.z);
+          } else if (preset === 'top') {
+            camera.position.set(target.x, target.y + d, target.z);
+          } else if (preset === 'three-quarter') {
+            camera.position.set(target.x + d * 0.7, target.y + d * 0.7, target.z + d * 0.7);
+          }
+          camera.lookAt(target);
+          controls.update();
+        });
+      });
+
+      const fileInput = document.getElementById('fileInput');
+      const uploadZone = document.getElementById('uploadZone');
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+      const progressText = document.getElementById('progressText');
+
+      uploadZone.addEventListener('click', () => fileInput.click());
+      uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+      uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+      uploadZone.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+      });
+
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        uploadZone.classList.add('has-file');
+        progressBar.classList.add('visible');
+        for (let p = 0; p <= 100; p += 5) {
+          progressFill.style.width = p + '%';
+          progressText.textContent = p + '%';
+          await new Promise(r => setTimeout(r, 50));
+        }
+        const ext = file.name.split('.').pop().toLowerCase();
+        const loadModel = async () => {
+          try {
+            if (['glb', 'gltf'].includes(ext)) {
+              const loader = new GLTFLoader();
+              const url = URL.createObjectURL(file);
+              const gltf = await loader.loadAsync(url);
+              URL.revokeObjectURL(url);
+              if (mesh) scene.remove(mesh);
+              mesh = gltf.scene;
+              scene.add(mesh);
+            } else if (ext === 'obj') {
+              const loader = new OBJLoader();
+              const url = URL.createObjectURL(file);
+              const obj = await loader.loadAsync(url);
+              URL.revokeObjectURL(url);
+              if (mesh) scene.remove(mesh);
+              mesh = obj;
+              mesh.traverse(o => {
+                if (o.isMesh && !o.material) o.material = new THREE.MeshStandardMaterial({ color: 0x4a9eff });
+              });
+              scene.add(mesh);
+            } else {
+              progressText.textContent = 'Use .glb, .gltf, or .obj';
+              progressBar.classList.remove('visible');
+              return;
+            }
+            const box = new THREE.Box3().setFromObject(mesh);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            mesh.position.sub(center);
+            let verts = 0, tris = 0, meshes = 0, mats = new Set();
+            mesh.traverse(o => {
+              if (o.isMesh) {
+                meshes++;
+                const g = o.geometry;
+                if (g) {
+                  if (g.attributes.position) verts += g.attributes.position.count;
+                  if (g.index) tris += g.index.count / 3;
+                  else if (g.attributes.position) tris += g.attributes.position.count / 3;
+                }
+                if (o.material) {
+                  const m = Array.isArray(o.material) ? o.material : [o.material];
+                  m.forEach(ma => mats.add(ma));
+                }
+              }
+            });
+            document.getElementById('statVertices').textContent = verts.toLocaleString();
+            document.getElementById('statTriangles').textContent = tris.toLocaleString();
+            document.getElementById('statMeshes').textContent = meshes;
+            document.getElementById('statMaterials').textContent = mats.size;
+            document.getElementById('statDimensions').textContent =
+              `${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)}`;
+            controls.target.copy(center);
+            const maxDim = Math.max(size.x, size.y, size.z);
+            camera.position.set(maxDim * 1.5, maxDim * 1.5, maxDim * 1.5);
+            camera.lookAt(center);
+          } catch (err) {
+            console.error(err);
+            progressText.textContent = 'Load failed';
+          }
+          progressBar.classList.remove('visible');
+        };
+        await loadModel();
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
