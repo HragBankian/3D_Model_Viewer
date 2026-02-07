@@ -1,12 +1,12 @@
-# 3D Model Viewer — UI/UX Design Documentation
+# 3D Model Viewer
 
 ## Design Overview
 
-This is an interactive HTML/CSS/JS prototype demonstrating the complete UI for a web-based 3D model viewer. All **6 mandatory features** plus **1 optional feature** (Dark/Light Theme Toggle) are implemented.
+This is an interactive HTML/CSS/JS prototype demonstrating the complete UI for a web-based 3D model viewer.
 
 ---
 
-## Mandatory Features
+## Features
 
 ### 1. Model Upload & Info
 - **File upload button**: Drag-and-drop zone with click-to-upload
@@ -55,9 +55,7 @@ This is an interactive HTML/CSS/JS prototype demonstrating the complete UI for a
 - Responsive design adaptable to window size
 - Clean, professional appearance
 
----
-
-## Optional Feature: Dark/Light Theme Toggle
+## 7. Dark/Light Theme Toggle
 
 - Switch between dark and light UI themes
 - One-click toggle in the top bar
@@ -76,16 +74,3 @@ This is an interactive HTML/CSS/JS prototype demonstrating the complete UI for a
 | **Feedback** | Progress bar, active states, hover states | Clear affordances and system status |
 
 ---
-
-## How to Run
-
-1. Open `index.html` in a modern browser, or
-2. Serve locally: `npx serve -l 3000` then visit `http://localhost:3000`
-
----
-
-## Evaluation Checklist
-
-- [x] **User Experience (40%)**: Intuitive layout, clear hierarchy, ease of use
-- [x] **Functionality (30%)**: All 6 mandatory features + 1 optional
-- [x] **Visual Design (30%)**: Aesthetic quality, consistency, creativity
