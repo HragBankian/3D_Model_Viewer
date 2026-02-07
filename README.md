@@ -1,4 +1,4 @@
-# 3D Model Viewer — UI/UX Design Challenge
+# 3D Model Viewer
 
 An interactive web-based 3D model viewer prototype with all mandatory features + Dark/Light theme toggle.
 
