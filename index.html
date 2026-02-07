@@ -519,8 +519,22 @@
       color: var(--accent);
     }
 
+    .upload-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
     .file-input {
-      display: none;
+      position: absolute;
+      width: 0;
+      height: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+      opacity: 0;
+      pointer-events: none;
     }
 
     @media (max-width: 1200px) {
@@ -569,12 +583,14 @@
       <!-- 1. Model Upload & Info -->
       <div class="panel">
         <h2 class="panel-title">Model Upload & Info</h2>
-        <label class="upload-zone" id="uploadZone">
+        <div class="upload-wrapper">
           <input type="file" class="file-input" id="fileInput" accept=".glb,.gltf,.obj,.fbx">
-          <div class="upload-icon">📁</div>
-          <div class="upload-text">Drop file or click to upload</div>
-          <div class="upload-formats">.glb · .gltf · .obj · .fbx</div>
-        </label>
+          <div class="upload-zone" id="uploadZone" role="button" tabindex="0">
+            <span class="upload-icon">📁</span>
+            <span class="upload-text">Drop file or click to upload</span>
+            <span class="upload-formats">.glb · .gltf · .obj · .fbx</span>
+          </div>
+        </div>
         <div class="progress-bar" id="progressBar">
           <div class="progress-fill" id="progressFill"></div>
         </div>
@@ -855,15 +871,26 @@
       const progressFill = document.getElementById('progressFill');
       const progressText = document.getElementById('progressText');
 
-      uploadZone.addEventListener('click', () => fileInput.click());
+      const triggerFileInput = () => fileInput.click();
+      uploadZone.addEventListener('click', (e) => { e.preventDefault(); triggerFileInput(); });
+      uploadZone.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); triggerFileInput(); } });
       uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
       uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
       uploadZone.addEventListener('drop', e => {
         e.preventDefault();
         uploadZone.classList.remove('dragover');
-        if (e.dataTransfer.files.length) fileInput.files = e.dataTransfer.files;
+        if (e.dataTransfer.files.length) {
+          const dt = new DataTransfer();
+          dt.items.add(e.dataTransfer.files[0]);
+          fileInput.files = dt.files;
+        }
         fileInput.dispatchEvent(new Event('change'));
       });
+
+      const updateProgress = (p, text) => {
+        progressFill.style.width = p + '%';
+        progressText.textContent = text ?? p + '%';
+      };
 
       fileInput.addEventListener('change', async (e) => {
         const file = e.target.files?.[0];
@@ -871,18 +898,19 @@
         uploadZone.classList.add('has-file');
         progressBar.classList.add('visible');
         progressText.classList.add('visible');
-        for (let p = 0; p <= 100; p += 5) {
-          progressFill.style.width = p + '%';
-          progressText.textContent = p + '%';
-          await new Promise(r => setTimeout(r, 50));
-        }
+        updateProgress(0, 'Loading…');
         const ext = file.name.split('.').pop().toLowerCase();
         const loadModel = async () => {
           try {
             if (['glb', 'gltf'].includes(ext)) {
               const loader = new GLTFLoader();
               const url = URL.createObjectURL(file);
-              const gltf = await loader.loadAsync(url);
+              const gltf = await new Promise((resolve, reject) => {
+                loader.load(url, resolve, (xhr) => {
+                  const p = xhr.total ? Math.round((xhr.loaded / xhr.total) * 100) : 0;
+                  updateProgress(p, p + '%');
+                }, reject);
+              });
               URL.revokeObjectURL(url);
               if (mesh) scene.remove(mesh);
               mesh = gltf.scene;
@@ -890,7 +918,12 @@
             } else if (ext === 'obj') {
               const loader = new OBJLoader();
               const url = URL.createObjectURL(file);
-              const obj = await loader.loadAsync(url);
+              const obj = await new Promise((resolve, reject) => {
+                loader.load(url, resolve, (xhr) => {
+                  const p = xhr.total ? Math.round((xhr.loaded / xhr.total) * 100) : 0;
+                  updateProgress(p, p + '%');
+                }, reject);
+              });
               URL.revokeObjectURL(url);
               if (mesh) scene.remove(mesh);
               mesh = obj;
@@ -934,12 +967,14 @@
             const maxDim = Math.max(size.x, size.y, size.z);
             camera.position.set(maxDim * 1.5, maxDim * 1.5, maxDim * 1.5);
             camera.lookAt(center);
+            updateProgress(100, '100%');
           } catch (err) {
             console.error(err);
             progressText.textContent = 'Load failed';
           }
           progressBar.classList.remove('visible');
           progressText.classList.remove('visible');
+          fileInput.value = '';
         };
         await loadModel();
       });
