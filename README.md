@@ -1,21 +1,72 @@
 # 3D Model Viewer
 
-An interactive web-based 3D model viewer prototype with all mandatory features + Dark/Light theme toggle.
+An interactive HTML/CSS/JS web-based 3D model viewer prototype.
 
 ## Live Demo
 
-**[View the live app →](https://hragbankian.github.io/3D_Model_Viewer/)**
-
-Hosted on GitHub Pages.
+**[View the live app](https://hragbankian.github.io/3D_Model_Viewer/)** hosted on GitHub Pages.
 
 ## Features
 
-- **Model Upload & Info** — Drag-and-drop or click to upload `.glb`, `.gltf`, `.obj`; progress bar; vertex/triangle/mesh/material counts; dimensions
-- **Performance Analysis** — Score (0–100), color-coded status, file size, texture memory, triangle count, optimization tips
-- **Render Modes** — PBR, Wireframe, Normals, UV Checker, Unlit
-- **Lighting Controls** — Main + Ambient light with intensity, color, reset
-- **Camera Controls** — Front/Side/Top/3–4 presets; orbit/pan/zoom
-- **3D Viewport** — Grid and axes toggles; responsive layout
-- **Theme Toggle** — Dark/Light mode (optional feature)
+### 1. Model Upload & Info
+- **File upload button**: Drag-and-drop zone with click-to-upload
+- **Supported formats**: `.glb`, `.gltf`, `.obj`, `.fbx` (as specified)
+- **Loading progress**: 0–100% progress bar with percentage display
+- **Model statistics panel**:
+  - Vertex count
+  - Triangle count
+  - Number of meshes
+  - Number of materials
+  - Model dimensions (W × H × D)
 
-See [DESIGN.md](DESIGN.md) for full design documentation.
+### 2. Performance Analysis
+- **Overall score**: 0–100 scale with color-coded status
+  - Green (≥80): Good
+  - Yellow (55–79): Moderate
+  - Red (<55): Poor
+- **3 key metrics**: File size, texture memory, triangle count
+- **Optimization tips**: Contextual suggestions (e.g., "Reduce texture resolution...")
+
+### 3. Render Modes
+- **5 modes** with clear switcher:
+  - Default PBR (full materials and lighting)
+  - Wireframe (mesh structure)
+  - Normals (color-coded normals)
+  - UV Checker (checkered pattern for UV mapping)
+  - Unlit (flat shading, no lighting)
+- Active mode has visual indication (highlighted button)
+- Instant switching between modes
+
+### 4. Lighting Controls
+- **Main Light**: Intensity slider, color picker, reset button
+- **Ambient Light**: Intensity slider, color picker, reset button
+- All controls update in real-time
+
+### 5. Camera Controls
+- **Preset buttons**: Front, Side, Top, 3/4 View
+- **Interactive controls** (OrbitControls):
+  - Mouse: Left-drag rotate, right-drag pan, scroll zoom
+  - Touch: One-finger rotate, two-finger pan, pinch to zoom
+- Auto-fit model on load
+
+### 6. 3D Viewport
+- Large canvas for displaying the 3D model
+- Optional toggles: Grid helper, Axes helper
+- Responsive design adaptable to window size
+- Clean, professional appearance
+
+### 7. Dark/Light Theme Toggle
+
+- Switch between dark and light UI themes
+- One-click toggle in the top bar
+- Preserves accessibility and readability in both modes
+
+## Design Choices
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| **Layout** | Left sidebar (upload + stats + performance), right sidebar (modes + lighting + camera) | Keeps controls grouped by function; viewport stays centered and unobstructed |
+| **Typography** | DM Sans (UI), JetBrains Mono (stats/metrics) | Clear hierarchy; monospace for numerical data |
+| **Color** | Dark-first theme with accent blue (#4a9eff) | Familiar for 3D tools; reduces eye strain |
+| **Spacing** | 16px panel padding, 8–24px gaps | Consistent rhythm and visual breathing room |
+| **Feedback** | Progress bar, active states, hover states | Clear affordances and system status |
